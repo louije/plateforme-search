@@ -26,14 +26,9 @@ def get_search_client():
 def load_siaes():
     """Load the 5 SIAEs from data file."""
     siaes_path = DATA_DIR / "siaes.json"
-    print(f"[DEBUG] Looking for siaes at: {siaes_path}")
-    print(f"[DEBUG] DATA_DIR contents: {list(DATA_DIR.iterdir()) if DATA_DIR.exists() else 'DIR NOT FOUND'}")
     if siaes_path.exists():
         with open(siaes_path, encoding="utf-8") as f:
-            siaes = json.load(f)
-            print(f"[DEBUG] Loaded {len(siaes)} SIAEs")
-            return siaes
-    print("[DEBUG] siaes.json not found")
+            return json.load(f)
     return []
 
 

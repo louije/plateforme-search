@@ -187,39 +187,26 @@ def extract_all():
     return structures, services
 
 
+HARDCODED_SIAES = [
+    {"id": "00125c43-3d7b-411a-ac1d-b590d3ac782b", "name": "FLAMBOYANT PAYSAGE", "type": "EI", "commune": "Les TROIS-ILETS", "code_postal": "97229"},
+    {"id": "0018e483-7c68-4f21-8eac-d87ce41b2730", "name": "Assoc agriservices castres", "type": "AI", "commune": "CASTRES", "code_postal": "81100"},
+    {"id": "0058278a-f865-4284-8a4d-f269c42df52e", "name": "Association Maison Accueil Solidarité (M.A.S)", "type": "ACI", "commune": "Marconne", "code_postal": "62140"},
+    {"id": "00e143c6-f807-4396-8a7c-1f5373326c59", "name": "Cooperative d'initiative jeunes", "type": "EITI", "commune": "Pointe-à-Pitre", "code_postal": "97110"},
+    {"id": "010fd63c-d8c6-4d81-96ea-636584a44d71", "name": "G-eco", "type": "EA", "commune": "Cenon", "code_postal": "33150"},
+]
+
+
 def identify_siaes(structures):
-    """Identify SIAEs from structures list."""
-    # SIAEs are from emplois-de-linclusion with /siae/ in lien_source
-    siaes = [
-        s for s in structures
-        if s.get("source") == "emplois-de-linclusion"
-        and "/siae/" in (s.get("lien_source") or "")
-    ]
-
-    # Take 5 diverse SIAEs (different types if possible)
-    types_seen = set()
-    selected = []
-    for s in siaes:
-        t = s.get("type", "")
-        if t not in types_seen and len(selected) < 5:
-            selected.append(s)
-            types_seen.add(t)
-
-    # Fill up to 5 if not enough diverse types
-    if len(selected) < 5:
-        for s in siaes:
-            if s not in selected and len(selected) < 5:
-                selected.append(s)
-
+    """Use hardcoded SIAEs list."""
     output_path = DATA_DIR / "siaes.json"
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(selected, f, ensure_ascii=False, indent=2)
+        json.dump(HARDCODED_SIAES, f, ensure_ascii=False, indent=2)
 
-    print(f"  Identified {len(siaes)} SIAEs total, selected 5:")
-    for s in selected:
+    print(f"  Using {len(HARDCODED_SIAES)} hardcoded SIAEs:")
+    for s in HARDCODED_SIAES:
         print(f"    - {s['name']} ({s['type']})")
 
-    return selected
+    return HARDCODED_SIAES
 
 
 if __name__ == "__main__":
