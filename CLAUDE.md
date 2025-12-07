@@ -320,5 +320,129 @@ Use Meilisearch's multi-search endpoint (`/multi-search`) to:
 
 ---
 
-*Document Version: 1.0*  
+## 9. Implementation Status
+
+### 9.1 What's Done
+
+#### Core Application
+- [x] Flask app with HTMX for real-time search (`app.py`)
+- [x] Multi-search across users, structures, services
+- [x] Autocomplete dropdown with grouped results
+- [x] Type filter as toggle buttons (pill-style, inside dropdown)
+- [x] Full results page with pagination
+- [x] Detail pages for each entity type
+- [x] SIAE context selector (simulates logged-in user's structure)
+- [x] User privacy filtering (users only see users from their structure)
+
+#### Data Pipeline
+- [x] `extract.py` - Loads from swiper or downloads from data.gouv.fr
+- [x] `generate_users.py` - 500k users with French/European/African names
+- [x] `index.py` - Batch indexing into Meilisearch
+- [x] `setup_data.py` - One-command setup for fresh deployments
+
+#### UI/Layout
+- [x] Search bar left, SIAE selector right (no title)
+- [x] Toggle buttons as rounded pills inside dropdown
+- [x] Two-column results layout (category label | results)
+- [x] Highlighting of search matches
+- [x] Responsive CSS styling
+
+#### Deployment
+- [x] Docker Compose for local development
+- [x] Railway configuration (Procfile, railway.toml)
+- [x] `/admin/reindex` route for easy data initialization
+- [x] Discrete "admin" link in footer
+
+### 9.2 What's Not Done
+
+#### From Original Spec
+- [ ] Intent detection (boost results based on query type)
+- [ ] Synonym configuration for job-seeking domain
+- [ ] Faceted search with filter counts on results page
+- [ ] Structure type / service theme filters on results page
+- [ ] Geographic search / proximity ranking
+- [ ] French stop words optimization
+
+#### Technical Debt
+- [ ] Error handling for Meilisearch connection failures
+- [ ] Loading states in UI during search
+- [ ] Caching for SIAE list
+- [ ] Tests
+
+### 9.3 Current Data
+
+| Index | Documents | Notes |
+|-------|-----------|-------|
+| users | 500,000 | 100 per SIAE, rest distributed across structures |
+| structures | 66,162 | From data-inclusion dataset |
+| services | 51,757 | From data-inclusion dataset |
+
+**5 SIAEs selected:**
+- FLAMBOYANT PAYSAGE (EI)
+- Assoc agriservices castres (AI)
+- Association Maison Accueil Solidarité (ACI)
+- Cooperative d'initiative jeunes (EITI)
+- G-eco (EA)
+
+### 9.4 Running Locally
+
+```bash
+# Start Meilisearch
+docker compose up -d search
+
+# Activate venv and install deps
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# First time: extract data and index
+python extract.py
+python generate_users.py
+python index.py
+
+# Run Flask
+flask run
+```
+
+### 9.5 Railway Deployment
+
+1. Push to GitHub
+2. Create Railway project from repo
+3. Add Meilisearch service from Railway marketplace
+4. Set environment variables:
+   - `MEILISEARCH_URL` = `${{Meilisearch.MEILISEARCH_HOST}}`
+   - `MEILISEARCH_KEY` = `${{Meilisearch.MEILI_MASTER_KEY}}`
+5. Generate domain
+6. Visit `/admin/reindex` to initialize data
+
+### 9.6 Key Files
+
+| File | Purpose |
+|------|---------|
+| `app.py` | Flask routes and search logic |
+| `config.py` | Configurable limits (autocomplete, pagination) |
+| `extract.py` | Download/transform structures and services |
+| `generate_users.py` | Generate fake users with diverse names |
+| `index.py` | Index data into Meilisearch |
+| `templates/search.html` | Main search page |
+| `templates/partials/dropdown.html` | HTMX autocomplete partial |
+| `data/siaes.json` | The 5 selected SIAEs for context selector |
+
+### 9.7 Configuration
+
+Limits are configurable via environment variables or `config.py`:
+
+```python
+CONFIG = {
+    "MEILISEARCH_URL": "http://localhost:7700",
+    "MEILISEARCH_KEY": "masterKey",
+    "AUTOCOMPLETE_LIMIT": 3,      # Results per type in dropdown
+    "FILTERED_LIMIT": 10,         # Results when type filter active
+    "RESULTS_PAGE_LIMIT": 20,     # Results per page
+}
+```
+
+---
+
+*Document Version: 1.1*
 *Last Updated: 2025-12-07*
