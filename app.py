@@ -229,5 +229,56 @@ def set_context():
     return redirect(url_for("index"))
 
 
+@app.route("/admin/reindex")
+def reindex():
+    """Admin page to trigger data reindexing."""
+    return render_template("admin/reindex.html")
+
+
+@app.route("/admin/reindex/run", methods=["POST"])
+def reindex_run():
+    """Run the reindexing process."""
+    import extract
+    import generate_users
+    import index
+
+    user_count = int(request.form.get("users", 10000))
+    logs = []
+
+    try:
+        # Step 1: Extract data
+        logs.append("Extracting structures and services...")
+        extract.DATA_DIR.mkdir(exist_ok=True)
+        structures = extract.extract_structures()
+        logs.append(f"  Loaded {len(structures)} structures")
+        services = extract.extract_services()
+        logs.append(f"  Loaded {len(services)} services")
+        siaes = extract.identify_siaes(structures)
+        logs.append(f"  Selected {len(siaes)} SIAEs")
+
+        # Step 2: Generate users
+        logs.append(f"Generating {user_count:,} users...")
+        users = generate_users.generate_all_users(
+            total_users=user_count,
+            users_per_siae=100
+        )
+        logs.append(f"  Generated {len(users):,} users")
+
+        # Step 3: Index into Meilisearch
+        logs.append("Indexing into Meilisearch...")
+        client = index.get_client()
+        index.clear_indexes(client)
+        index.index_users(client)
+        index.index_structures(client)
+        index.index_services(client)
+        logs.append("Indexing complete!")
+
+        return render_template("admin/reindex.html", logs=logs, success=True)
+
+    except Exception as e:
+        logs.append(f"ERROR: {str(e)}")
+        return render_template("admin/reindex.html", logs=logs, success=False)
+
+
 if __name__ == "__main__":
     app.run(debug=True)

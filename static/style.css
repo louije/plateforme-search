@@ -292,3 +292,13 @@ footer {
     color: #999;
     font-size: 0.85em;
 }
+
+footer .admin-link {
+    color: #ccc;
+    text-decoration: none;
+    margin-left: 10px;
+}
+
+footer .admin-link:hover {
+    color: #666;
+}

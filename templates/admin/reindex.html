@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Reindex{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <h2>Data Reindexing</h2>
+    <p>This will download data, generate users, and index everything into Meilisearch.</p>
+
+    {% if not logs %}
+    <form method="POST" action="{{ url_for('reindex_run') }}" class="reindex-form">
+        <label>
+            Number of users to generate:
+            <input type="number" name="users" value="10000" min="500" max="100000">
+        </label>
+        <p class="hint">Recommended: 10,000 for Railway, up to 100,000 for testing.</p>
+        <button type="submit" onclick="this.disabled=true; this.innerText='Running... (may take a few minutes)'; this.form.submit();">
+            Start Reindexing
+        </button>
+    </form>
+    {% else %}
+    <div class="logs {% if success %}success{% else %}error{% endif %}">
+        <h3>{% if success %}Completed{% else %}Failed{% endif %}</h3>
+        <pre>{% for log in logs %}{{ log }}
+{% endfor %}</pre>
+    </div>
+    <a href="{{ url_for('index') }}" class="back-link">Back to Search</a>
+    {% endif %}
+</div>
+
+<style>
+.admin-page {
+    max-width: 600px;
+    margin: 40px auto;
+}
+.admin-page h2 {
+    margin-bottom: 10px;
+}
+.reindex-form {
+    margin-top: 30px;
+}
+.reindex-form label {
+    display: block;
+    margin-bottom: 10px;
+}
+.reindex-form input {
+    padding: 8px 12px;
+    font-size: 1em;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 150px;
+    margin-left: 10px;
+}
+.reindex-form .hint {
+    font-size: 0.85em;
+    color: #666;
+    margin: 5px 0 20px;
+}
+.reindex-form button {
+    padding: 12px 24px;
+    font-size: 1em;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.reindex-form button:hover {
+    background: #1d4ed8;
+}
+.reindex-form button:disabled {
+    background: #94a3b8;
+    cursor: wait;
+}
+.logs {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+.logs.success {
+    border-left: 4px solid #22c55e;
+}
+.logs.error {
+    border-left: 4px solid #ef4444;
+}
+.logs pre {
+    font-size: 0.9em;
+    white-space: pre-wrap;
+    margin: 10px 0 0;
+}
+</style>
+{% endblock %}
