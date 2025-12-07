@@ -1,5 +1,42 @@
-{% if results %}
 <div class="dropdown-content">
+    <!-- Type filter as toggle buttons -->
+    <div class="type-filter">
+        <label class="toggle-btn {% if not type_filter %}active{% endif %}">
+            <input type="radio" name="type" value="" {% if not type_filter %}checked{% endif %}
+                   hx-get="{{ url_for('search') }}"
+                   hx-trigger="change"
+                   hx-target="#dropdown"
+                   hx-include="#search-input">
+            Tous
+        </label>
+        <label class="toggle-btn {% if type_filter == 'users' %}active{% endif %}">
+            <input type="radio" name="type" value="users" {% if type_filter == 'users' %}checked{% endif %}
+                   hx-get="{{ url_for('search') }}"
+                   hx-trigger="change"
+                   hx-target="#dropdown"
+                   hx-include="#search-input">
+            Utilisateurs
+        </label>
+        <label class="toggle-btn {% if type_filter == 'structures' %}active{% endif %}">
+            <input type="radio" name="type" value="structures" {% if type_filter == 'structures' %}checked{% endif %}
+                   hx-get="{{ url_for('search') }}"
+                   hx-trigger="change"
+                   hx-target="#dropdown"
+                   hx-include="#search-input">
+            Structures
+        </label>
+        <label class="toggle-btn {% if type_filter == 'services' %}active{% endif %}">
+            <input type="radio" name="type" value="services" {% if type_filter == 'services' %}checked{% endif %}
+                   hx-get="{{ url_for('search') }}"
+                   hx-trigger="change"
+                   hx-target="#dropdown"
+                   hx-include="#search-input">
+            Services
+        </label>
+    </div>
+
+    {% if results %}
+    <!-- Results -->
     {% if results.users.hits %}
     <div class="result-group">
         <div class="group-label">Utilisateurs</div>
@@ -68,5 +105,5 @@
     {% if not results.users.hits and not results.structures.hits and not results.services.hits %}
     <div class="no-results">Aucun resultat pour "{{ query }}"</div>
     {% endif %}
+    {% endif %}
 </div>
-{% endif %}
