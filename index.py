@@ -41,11 +41,15 @@ def index_users(client):
         "sortableAttributes": ["creation_date", "start_date"],
     })
 
-    # Add documents (specify primary key to avoid ambiguity with structure_id)
-    task = index.add_documents(users, primary_key="id")
-    client.wait_for_task(task.task_uid)
+    # Add in batches (specify primary key to avoid ambiguity with structure_id)
+    batch_size = 10000
+    for i in range(0, len(users), batch_size):
+        batch = users[i:i + batch_size]
+        task = index.add_documents(batch, primary_key="id")
+        client.wait_for_task(task.task_uid)
+        print(f"  Indexed {min(i + batch_size, len(users)):,}/{len(users):,} users")
 
-    print(f"  Indexed {len(users)} users")
+    print(f"  Total: {len(users):,} users indexed")
 
 
 def index_structures(client):
