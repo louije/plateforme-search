@@ -196,21 +196,13 @@ HARDCODED_SIAES = [
 ]
 
 
-def identify_siaes(structures):
-    """Use hardcoded SIAEs list."""
-    output_path = DATA_DIR / "siaes.json"
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(HARDCODED_SIAES, f, ensure_ascii=False, indent=2)
-
-    print(f"  Using {len(HARDCODED_SIAES)} hardcoded SIAEs:")
-    for s in HARDCODED_SIAES:
-        print(f"    - {s['name']} ({s['type']})")
-
+def get_siaes():
+    """Return hardcoded SIAEs list."""
     return HARDCODED_SIAES
 
 
 if __name__ == "__main__":
     DATA_DIR.mkdir(exist_ok=True)
     structures, services = extract_all()
-    identify_siaes(structures)
+    print(f"  Using {len(get_siaes())} hardcoded SIAEs")
     print("\nDone!")

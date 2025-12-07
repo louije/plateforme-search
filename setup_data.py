@@ -25,7 +25,7 @@ def main():
     import extract
     extract.DATA_DIR.mkdir(exist_ok=True)
     structures, services = extract.extract_all()
-    extract.identify_siaes(structures)
+    print(f"  Using {len(extract.get_siaes())} hardcoded SIAEs")
 
     print("\n" + "=" * 50)
     print(f"STEP 2: Generating {args.users:,} users")

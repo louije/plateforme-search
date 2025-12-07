@@ -24,12 +24,9 @@ def get_search_client():
 
 
 def load_siaes():
-    """Load the 5 SIAEs from data file."""
-    siaes_path = DATA_DIR / "siaes.json"
-    if siaes_path.exists():
-        with open(siaes_path, encoding="utf-8") as f:
-            return json.load(f)
-    return []
+    """Return hardcoded SIAEs."""
+    import extract
+    return extract.get_siaes()
 
 
 def get_current_context():
@@ -269,8 +266,8 @@ def reindex_run():
             yield "  Transforming and saving...\n"
             structures = extract.save_structures(raw_structures)
             services = extract.save_services(raw_services)
-            siaes = extract.identify_siaes(structures)
-            yield f"<span class='ok'>  ✓ Selected {len(siaes)} SIAEs</span>\n\n"
+            siaes = extract.get_siaes()
+            yield f"<span class='ok'>  ✓ Using {len(siaes)} hardcoded SIAEs</span>\n\n"
 
             yield f"Step 2: Generating {user_count:,} users...\n"
             users = generate_users.generate_all_users(
