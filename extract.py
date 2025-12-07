@@ -1,20 +1,31 @@
 #!/usr/bin/env python3
 """
 Extract structures and services from data-inclusion dataset.
-Uses local swiper data if available, otherwise downloads from data.gouv.fr.
+Uses cached data if fresh, swiper data if available, otherwise downloads from data.gouv.fr.
 """
 
 import json
 import re
+import time
 import requests
 from pathlib import Path
 
 DATA_DIR = Path(__file__).parent / "data"
 SWIPER_DATA = Path(__file__).parent.parent / "swiper" / "data"
+CACHE_MAX_AGE_DAYS = 5
 
 # data.gouv.fr dataset ID for data-inclusion
 DATASET_ID = "6233723c2c1e4a54af2f6b2d"
 DATASET_API_URL = f"https://www.data.gouv.fr/api/1/datasets/{DATASET_ID}/"
+
+
+def is_cache_fresh(filepath, max_age_days=CACHE_MAX_AGE_DAYS):
+    """Check if a cached file exists and is less than max_age_days old."""
+    if not filepath.exists():
+        return False
+    age_seconds = time.time() - filepath.stat().st_mtime
+    age_days = age_seconds / (24 * 3600)
+    return age_days < max_age_days
 
 
 def find_resource_url(dataset, pattern):
@@ -49,31 +60,63 @@ def download_json(url, description):
 
 
 def get_data_source():
-    """Check if swiper data exists, return source type and URLs if needed."""
+    """Check data source: cache (if fresh), swiper, or download."""
+    cached_structures = DATA_DIR / "structures_raw.json"
+    cached_services = DATA_DIR / "services_raw.json"
+
+    # Check for fresh cache first
+    if is_cache_fresh(cached_structures) and is_cache_fresh(cached_services):
+        return "cache", None, None
+
+    # Check for swiper data
     swiper_structures = SWIPER_DATA / "structures.json"
     swiper_services = SWIPER_DATA / "services.json"
-
     if swiper_structures.exists() and swiper_services.exists():
         return "swiper", None, None
 
+    # Need to download
     structures_url, services_url = get_resource_urls()
     return "download", structures_url, services_url
 
 
 def load_structures_raw(source, url=None):
     """Load raw structures data."""
+    cached = DATA_DIR / "structures_raw.json"
+
+    if source == "cache":
+        print(f"  Using cached structures ({(time.time() - cached.stat().st_mtime) / 3600:.1f}h old)")
+        with open(cached, encoding="utf-8") as f:
+            return json.load(f)
+
     if source == "swiper":
         with open(SWIPER_DATA / "structures.json", encoding="utf-8") as f:
             return json.load(f)
-    return download_json(url, "structures (~80MB)")
+
+    # Download and cache
+    data = download_json(url, "structures (~80MB)")
+    with open(cached, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    return data
 
 
 def load_services_raw(source, url=None):
     """Load raw services data."""
+    cached = DATA_DIR / "services_raw.json"
+
+    if source == "cache":
+        print(f"  Using cached services ({(time.time() - cached.stat().st_mtime) / 3600:.1f}h old)")
+        with open(cached, encoding="utf-8") as f:
+            return json.load(f)
+
     if source == "swiper":
         with open(SWIPER_DATA / "services.json", encoding="utf-8") as f:
             return json.load(f)
-    return download_json(url, "services (~175MB)")
+
+    # Download and cache
+    data = download_json(url, "services (~175MB)")
+    with open(cached, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    return data
 
 
 def transform_structure(s):
