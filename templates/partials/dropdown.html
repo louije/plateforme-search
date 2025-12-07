@@ -1,0 +1,72 @@
+{% if results %}
+<div class="dropdown-content">
+    {% if results.users.hits %}
+    <div class="result-group">
+        <div class="group-label">Utilisateurs</div>
+        <div class="group-results">
+            {% for hit in results.users.hits %}
+            <a href="{{ url_for('user_detail', id=hit.id) }}" class="result-item">
+                <span class="result-name">
+                    {{ hit._formatted.first_name | safe }} {{ hit._formatted.last_name | safe }}
+                </span>
+                <span class="result-meta">{{ hit.structure_name }}</span>
+            </a>
+            {% endfor %}
+            {% if results.users.estimatedTotalHits > limit %}
+            <a href="{{ url_for('results', q=query, type='users') }}" class="show-all">
+                voir tous ({{ results.users.estimatedTotalHits }})
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if results.structures.hits %}
+    <div class="result-group">
+        <div class="group-label">Structures</div>
+        <div class="group-results">
+            {% for hit in results.structures.hits %}
+            <a href="{{ url_for('structure_detail', id=hit.id) }}" class="result-item">
+                <span class="result-name">{{ hit._formatted.name | safe }}</span>
+                <span class="result-meta">{{ hit.type }} - {{ hit.commune }}</span>
+            </a>
+            {% endfor %}
+            {% if results.structures.estimatedTotalHits > limit %}
+            <a href="{{ url_for('results', q=query, type='structures') }}" class="show-all">
+                voir tous ({{ results.structures.estimatedTotalHits }})
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if results.services.hits %}
+    <div class="result-group">
+        <div class="group-label">Services</div>
+        <div class="group-results">
+            {% for hit in results.services.hits %}
+            <a href="{{ url_for('service_detail', id=hit.id) }}" class="result-item">
+                <span class="result-name">{{ hit._formatted.name | safe }}</span>
+                <span class="result-meta">
+                    {% if hit.theme is iterable and hit.theme is not string %}
+                        {{ hit.theme | join(', ') }}
+                    {% else %}
+                        {{ hit.theme }}
+                    {% endif %}
+                </span>
+            </a>
+            {% endfor %}
+            {% if results.services.estimatedTotalHits > limit %}
+            <a href="{{ url_for('results', q=query, type='services') }}" class="show-all">
+                voir tous ({{ results.services.estimatedTotalHits }})
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not results.users.hits and not results.structures.hits and not results.services.hits %}
+    <div class="no-results">Aucun resultat pour "{{ query }}"</div>
+    {% endif %}
+</div>
+{% endif %}

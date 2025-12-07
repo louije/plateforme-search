@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="search-container">
+    <!-- Context selector -->
+    <div class="context-selector">
+        <label for="context">Vue:</label>
+        <select id="context" onchange="setContext(this)">
+            <option value="">Toutes structures</option>
+            {% for s in structures %}
+            <option value="{{ s.id }}"
+                    data-name="{{ s.name }}"
+                    {% if context.structure_id == s.id %}selected{% endif %}>
+                {{ s.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Search input -->
+    <div class="search-box">
+        <input type="search"
+               id="search-input"
+               name="q"
+               placeholder="Rechercher..."
+               autocomplete="off"
+               hx-get="{{ url_for('search') }}"
+               hx-trigger="input changed delay:300ms, search"
+               hx-target="#dropdown"
+               hx-include="#type-filter">
+    </div>
+
+    <!-- Type filter -->
+    <div id="type-filter" class="type-filter">
+        <label>
+            <input type="radio" name="type" value="" checked
+                   hx-get="{{ url_for('search') }}"
+                   hx-trigger="change"
+                   hx-target="#dropdown"
+                   hx-include="#search-input">
+            Tous
+        </label>
+        <label>
+            <input type="radio" name="type" value="users"
+                   hx-get="{{ url_for('search') }}"
+                   hx-trigger="change"
+                   hx-target="#dropdown"
+                   hx-include="#search-input">
+            Utilisateurs
+        </label>
+        <label>
+            <input type="radio" name="type" value="structures"
+                   hx-get="{{ url_for('search') }}"
+                   hx-trigger="change"
+                   hx-target="#dropdown"
+                   hx-include="#search-input">
+            Structures
+        </label>
+        <label>
+            <input type="radio" name="type" value="services"
+                   hx-get="{{ url_for('search') }}"
+                   hx-trigger="change"
+                   hx-target="#dropdown"
+                   hx-include="#search-input">
+            Services
+        </label>
+    </div>
+
+    <!-- Results dropdown -->
+    <div id="dropdown" class="dropdown"></div>
+</div>
+
+<script>
+function setContext(select) {
+    const option = select.options[select.selectedIndex];
+    const structureId = option.value;
+    const structureName = option.dataset.name || 'Toutes structures';
+
+    const url = new URL('{{ url_for("set_context") }}', window.location.origin);
+    url.searchParams.set('structure_id', structureId);
+    url.searchParams.set('structure_name', structureName);
+
+    window.location.href = url.toString();
+}
+</script>
+{% endblock %}
