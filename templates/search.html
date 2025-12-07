@@ -19,11 +19,11 @@
         <div class="context-selector">
             <select id="context" onchange="setContext(this)">
                 <option value="">Toutes structures</option>
-                {% for s in structures %}
+                {% for s in siaes %}
                 <option value="{{ s.id }}"
                         data-name="{{ s.name }}"
                         {% if context.structure_id == s.id %}selected{% endif %}>
-                    {{ s.name }}
+                    {{ s.name }} ({{ s.type }})
                 </option>
                 {% endfor %}
             </select>

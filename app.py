@@ -3,12 +3,16 @@
 Universal Search Flask Application.
 """
 
+import json
+from pathlib import Path
 from flask import Flask, render_template, request, session, redirect, url_for
 import meilisearch
 from config import CONFIG
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-change-in-prod"
+
+DATA_DIR = Path(__file__).parent / "data"
 
 
 def get_search_client():
@@ -17,6 +21,15 @@ def get_search_client():
         CONFIG["MEILISEARCH_URL"],
         CONFIG["MEILISEARCH_KEY"]
     )
+
+
+def load_siaes():
+    """Load the 5 SIAEs from data file."""
+    siaes_path = DATA_DIR / "siaes.json"
+    if siaes_path.exists():
+        with open(siaes_path, encoding="utf-8") as f:
+            return json.load(f)
+    return []
 
 
 def get_current_context():
@@ -32,25 +45,12 @@ def get_current_context():
 def index():
     """Main search page."""
     context = get_current_context()
-
-    # Get available SIAEs for context selector
-    client = get_search_client()
-    try:
-        result = client.index("structures").search(
-            "",
-            {
-                "limit": 100,
-                "filter": 'source = "emplois-de-linclusion"',
-            }
-        )
-        structures = result.get("hits", [])
-    except Exception:
-        structures = []
+    siaes = load_siaes()
 
     return render_template(
         "search.html",
         context=context,
-        structures=structures,
+        siaes=siaes,
         config=CONFIG,
     )
 
