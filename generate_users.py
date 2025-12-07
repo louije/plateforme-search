@@ -58,12 +58,9 @@ AFRICAN_LAST_NAMES = [
 
 
 def load_siaes():
-    """Load SIAEs from extracted data."""
-    siaes_path = DATA_DIR / "siaes.json"
-    if not siaes_path.exists():
-        raise FileNotFoundError("siaes.json not found. Run extract.py first.")
-    with open(siaes_path, encoding="utf-8") as f:
-        return json.load(f)
+    """Return hardcoded SIAEs."""
+    import extract
+    return extract.get_siaes()
 
 
 def load_structures():
