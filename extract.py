@@ -5,15 +5,37 @@ Uses local swiper data if available, otherwise downloads from data.gouv.fr.
 """
 
 import json
+import re
 import requests
 from pathlib import Path
 
 DATA_DIR = Path(__file__).parent / "data"
 SWIPER_DATA = Path(__file__).parent.parent / "swiper" / "data"
 
-# data.gouv.fr dataset URLs (consolidated data-inclusion)
-STRUCTURES_URL = "https://www.data.gouv.fr/fr/datasets/r/8f9e4bdb-cf77-4d33-b75e-b2a2057c5e26"
-SERVICES_URL = "https://www.data.gouv.fr/fr/datasets/r/d6a05d0c-124c-4846-b016-613a0593cbb1"
+# data.gouv.fr dataset ID for data-inclusion
+DATASET_ID = "6233723c2c1e4a54af2f6b2d"
+DATASET_API_URL = f"https://www.data.gouv.fr/api/1/datasets/{DATASET_ID}/"
+
+
+def find_resource_url(dataset, pattern):
+    """Find a resource URL by matching title against a regex pattern."""
+    for resource in dataset.get("resources", []):
+        if re.match(pattern, resource.get("title", "")):
+            return resource.get("url")
+    raise ValueError(f"No resource found matching pattern: {pattern}")
+
+
+def get_resource_urls():
+    """Fetch dataset metadata and extract resource URLs dynamically."""
+    print("Fetching dataset metadata from data.gouv.fr...")
+    response = requests.get(DATASET_API_URL)
+    response.raise_for_status()
+    dataset = response.json()
+
+    structures_url = find_resource_url(dataset, r"^structures-inclusion.*\.json$")
+    services_url = find_resource_url(dataset, r"^services-inclusion.*\.json$")
+
+    return structures_url, services_url
 
 
 def download_json(url, description):
@@ -32,30 +54,26 @@ def download_json(url, description):
     return json.loads(content)
 
 
-def load_or_download_structures():
-    """Load structures from swiper or download from data.gouv.fr."""
-    swiper_path = SWIPER_DATA / "structures.json"
+def load_or_download_data():
+    """Load structures and services from swiper or download from data.gouv.fr."""
+    swiper_structures = SWIPER_DATA / "structures.json"
+    swiper_services = SWIPER_DATA / "services.json"
 
-    if swiper_path.exists():
-        print("Loading structures from swiper...")
-        with open(swiper_path, encoding="utf-8") as f:
-            return json.load(f)
-    else:
-        print("Swiper data not found, downloading from data.gouv.fr...")
-        return download_json(STRUCTURES_URL, "structures")
+    # Try swiper first
+    if swiper_structures.exists() and swiper_services.exists():
+        print("Loading from swiper...")
+        with open(swiper_structures, encoding="utf-8") as f:
+            structures = json.load(f)
+        with open(swiper_services, encoding="utf-8") as f:
+            services = json.load(f)
+        return structures, services
 
-
-def load_or_download_services():
-    """Load services from swiper or download from data.gouv.fr."""
-    swiper_path = SWIPER_DATA / "services.json"
-
-    if swiper_path.exists():
-        print("Loading services from swiper...")
-        with open(swiper_path, encoding="utf-8") as f:
-            return json.load(f)
-    else:
-        print("Swiper data not found, downloading from data.gouv.fr...")
-        return download_json(SERVICES_URL, "services")
+    # Download from data.gouv.fr with dynamic URL lookup
+    print("Swiper data not found, downloading from data.gouv.fr...")
+    structures_url, services_url = get_resource_urls()
+    structures = download_json(structures_url, "structures")
+    services = download_json(services_url, "services")
+    return structures, services
 
 
 def transform_structure(s):
@@ -93,34 +111,25 @@ def transform_service(s):
     }
 
 
-def extract_structures():
-    """Extract and transform structures."""
-    raw = load_or_download_structures()
-    print(f"  Loaded {len(raw)} structures")
+def extract_all():
+    """Extract and transform structures and services."""
+    raw_structures, raw_services = load_or_download_data()
 
-    structures = [transform_structure(s) for s in raw]
-
+    print(f"  Loaded {len(raw_structures)} structures")
+    structures = [transform_structure(s) for s in raw_structures]
     output_path = DATA_DIR / "structures.json"
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(structures, f, ensure_ascii=False)
-
     print(f"  Saved {len(structures)} structures to {output_path}")
-    return structures
 
-
-def extract_services():
-    """Extract and transform services."""
-    raw = load_or_download_services()
-    print(f"  Loaded {len(raw)} services")
-
-    services = [transform_service(s) for s in raw]
-
+    print(f"  Loaded {len(raw_services)} services")
+    services = [transform_service(s) for s in raw_services]
     output_path = DATA_DIR / "services.json"
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(services, f, ensure_ascii=False)
-
     print(f"  Saved {len(services)} services to {output_path}")
-    return services
+
+    return structures, services
 
 
 def identify_siaes(structures):
@@ -160,7 +169,6 @@ def identify_siaes(structures):
 
 if __name__ == "__main__":
     DATA_DIR.mkdir(exist_ok=True)
-    structures = extract_structures()
-    services = extract_services()
+    structures, services = extract_all()
     identify_siaes(structures)
     print("\nDone!")

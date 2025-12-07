@@ -24,8 +24,7 @@ def main():
     print("=" * 50)
     import extract
     extract.DATA_DIR.mkdir(exist_ok=True)
-    structures = extract.extract_structures()
-    services = extract.extract_services()
+    structures, services = extract.extract_all()
     extract.identify_siaes(structures)
 
     print("\n" + "=" * 50)

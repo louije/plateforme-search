@@ -249,9 +249,8 @@ def reindex_run():
         # Step 1: Extract data
         logs.append("Extracting structures and services...")
         extract.DATA_DIR.mkdir(exist_ok=True)
-        structures = extract.extract_structures()
+        structures, services = extract.extract_all()
         logs.append(f"  Loaded {len(structures)} structures")
-        services = extract.extract_services()
         logs.append(f"  Loaded {len(services)} services")
         siaes = extract.identify_siaes(structures)
         logs.append(f"  Selected {len(siaes)} SIAEs")

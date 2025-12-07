@@ -75,21 +75,41 @@ def load_structures():
         return json.load(f)
 
 
-def random_name():
-    """Generate a random name from various origins."""
+def random_first_name():
+    """Generate a random first name from various origins."""
     origin = random.choices(
         ["french", "european", "african"],
-        weights=[0.5, 0.25, 0.25],  # 50% French, 25% European, 25% African
+        weights=[0.5, 0.25, 0.25],
         k=1
     )[0]
 
     if origin == "french":
-        return fake_fr.first_name(), fake_fr.last_name()
+        return fake_fr.first_name()
     elif origin == "european":
-        faker = random.choice(EUROPEAN_FAKERS)
-        return faker.first_name(), faker.last_name()
-    else:  # african
-        return random.choice(AFRICAN_FIRST_NAMES), random.choice(AFRICAN_LAST_NAMES)
+        return random.choice(EUROPEAN_FAKERS).first_name()
+    else:
+        return random.choice(AFRICAN_FIRST_NAMES)
+
+
+def random_last_name():
+    """Generate a random last name from various origins."""
+    origin = random.choices(
+        ["french", "european", "african"],
+        weights=[0.5, 0.25, 0.25],
+        k=1
+    )[0]
+
+    if origin == "french":
+        return fake_fr.last_name()
+    elif origin == "european":
+        return random.choice(EUROPEAN_FAKERS).last_name()
+    else:
+        return random.choice(AFRICAN_LAST_NAMES)
+
+
+def random_name():
+    """Generate a random name (first and last picked independently)."""
+    return random_first_name(), random_last_name()
 
 
 def generate_user(user_id, structure, is_professional=False):
