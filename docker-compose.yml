@@ -1,0 +1,25 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    depends_on:
+      - search
+    environment:
+      - FLASK_DEBUG=1
+      - MEILISEARCH_URL=http://search:7700
+      - MEILISEARCH_KEY=masterKey
+
+  search:
+    image: getmeili/meilisearch:v1.6
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili_data:/meili_data
+    environment:
+      - MEILI_MASTER_KEY=masterKey
+
+volumes:
+  meili_data:
