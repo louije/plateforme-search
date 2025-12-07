@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""
+Setup script for initializing data on Railway or fresh deployment.
+Downloads data, generates users, and indexes into Meilisearch.
+
+Usage:
+    python setup_data.py [--users N]
+
+Options:
+    --users N    Number of users to generate (default: 10000 for Railway)
+"""
+
+import sys
+import argparse
+
+def main():
+    parser = argparse.ArgumentParser(description="Setup data for deployment")
+    parser.add_argument("--users", type=int, default=10000,
+                        help="Number of users to generate (default: 10000)")
+    args = parser.parse_args()
+
+    print("=" * 50)
+    print("STEP 1: Extracting structures and services")
+    print("=" * 50)
+    import extract
+    extract.DATA_DIR.mkdir(exist_ok=True)
+    structures = extract.extract_structures()
+    services = extract.extract_services()
+    extract.identify_siaes(structures)
+
+    print("\n" + "=" * 50)
+    print(f"STEP 2: Generating {args.users:,} users")
+    print("=" * 50)
+    import generate_users
+    generate_users.generate_all_users(total_users=args.users, users_per_siae=100)
+
+    print("\n" + "=" * 50)
+    print("STEP 3: Indexing into Meilisearch")
+    print("=" * 50)
+    import index
+    client = index.get_client()
+    index.clear_indexes(client)
+    index.index_users(client)
+    index.index_structures(client)
+    index.index_services(client)
+
+    print("\n" + "=" * 50)
+    print("SETUP COMPLETE!")
+    print("=" * 50)
+
+
+if __name__ == "__main__":
+    main()

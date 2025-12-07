@@ -1,34 +1,61 @@
 #!/usr/bin/env python3
 """
-Extract structures and services from swiper data.
-Transforms and saves to local data/ directory.
+Extract structures and services from data-inclusion dataset.
+Uses local swiper data if available, otherwise downloads from data.gouv.fr.
 """
 
 import json
+import requests
 from pathlib import Path
 
 DATA_DIR = Path(__file__).parent / "data"
 SWIPER_DATA = Path(__file__).parent.parent / "swiper" / "data"
 
-
-def load_swiper_structures():
-    """Load structures from swiper data."""
-    path = SWIPER_DATA / "structures.json"
-    if not path.exists():
-        raise FileNotFoundError(f"Swiper data not found at {path}")
-
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+# data.gouv.fr dataset URLs (consolidated data-inclusion)
+STRUCTURES_URL = "https://www.data.gouv.fr/fr/datasets/r/8f9e4bdb-cf77-4d33-b75e-b2a2057c5e26"
+SERVICES_URL = "https://www.data.gouv.fr/fr/datasets/r/d6a05d0c-124c-4846-b016-613a0593cbb1"
 
 
-def load_swiper_services():
-    """Load services from swiper data."""
-    path = SWIPER_DATA / "services.json"
-    if not path.exists():
-        raise FileNotFoundError(f"Swiper data not found at {path}")
+def download_json(url, description):
+    """Download JSON from URL with progress indication."""
+    print(f"Downloading {description}...")
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
 
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    # Get content length if available
+    total = response.headers.get('content-length')
+    if total:
+        total = int(total)
+        print(f"  Size: {total / 1024 / 1024:.1f} MB")
+
+    content = response.content
+    return json.loads(content)
+
+
+def load_or_download_structures():
+    """Load structures from swiper or download from data.gouv.fr."""
+    swiper_path = SWIPER_DATA / "structures.json"
+
+    if swiper_path.exists():
+        print("Loading structures from swiper...")
+        with open(swiper_path, encoding="utf-8") as f:
+            return json.load(f)
+    else:
+        print("Swiper data not found, downloading from data.gouv.fr...")
+        return download_json(STRUCTURES_URL, "structures")
+
+
+def load_or_download_services():
+    """Load services from swiper or download from data.gouv.fr."""
+    swiper_path = SWIPER_DATA / "services.json"
+
+    if swiper_path.exists():
+        print("Loading services from swiper...")
+        with open(swiper_path, encoding="utf-8") as f:
+            return json.load(f)
+    else:
+        print("Swiper data not found, downloading from data.gouv.fr...")
+        return download_json(SERVICES_URL, "services")
 
 
 def transform_structure(s):
@@ -68,15 +95,14 @@ def transform_service(s):
 
 def extract_structures():
     """Extract and transform structures."""
-    print("Loading structures from swiper...")
-    raw = load_swiper_structures()
+    raw = load_or_download_structures()
     print(f"  Loaded {len(raw)} structures")
 
     structures = [transform_structure(s) for s in raw]
 
     output_path = DATA_DIR / "structures.json"
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(structures, f, ensure_ascii=False, indent=2)
+        json.dump(structures, f, ensure_ascii=False)
 
     print(f"  Saved {len(structures)} structures to {output_path}")
     return structures
@@ -84,15 +110,14 @@ def extract_structures():
 
 def extract_services():
     """Extract and transform services."""
-    print("Loading services from swiper...")
-    raw = load_swiper_services()
+    raw = load_or_download_services()
     print(f"  Loaded {len(raw)} services")
 
     services = [transform_service(s) for s in raw]
 
     output_path = DATA_DIR / "services.json"
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(services, f, ensure_ascii=False, indent=2)
+        json.dump(services, f, ensure_ascii=False)
 
     print(f"  Saved {len(services)} services to {output_path}")
     return services
