@@ -3,7 +3,7 @@ builder = "nixpacks"
 
 [deploy]
 startCommand = "gunicorn app:app --timeout 600"
-preDeployCommand = "python3 setup_data.py --users 10000"
+preDeployCommand = "python3 -u setup_data.py --users 10000"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
