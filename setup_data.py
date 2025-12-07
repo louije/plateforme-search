@@ -36,8 +36,22 @@ def main():
     print("\n" + "=" * 50)
     print("STEP 3: Indexing into Meilisearch")
     print("=" * 50)
+    from config import CONFIG
+    print(f"  URL: {CONFIG['MEILISEARCH_URL']}")
+    print(f"  Key: {CONFIG['MEILISEARCH_KEY'][:8]}..." if CONFIG['MEILISEARCH_KEY'] else "  Key: (none)")
+
     import index
     client = index.get_client()
+
+    # Test connection
+    print("  Testing connection...")
+    try:
+        health = client.health()
+        print(f"  Status: {health['status']}")
+    except Exception as e:
+        print(f"  ERROR: Cannot connect to Meilisearch: {e}")
+        sys.exit(1)
+
     index.clear_indexes(client)
     index.index_users(client)
     index.index_structures(client)
