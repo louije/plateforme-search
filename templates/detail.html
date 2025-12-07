@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entity.name or (entity.first_name ~ ' ' ~ entity.last_name) }}{% endblock %}
+
+{% block content %}
+<div class="detail-page">
+    <a href="{{ url_for('index') }}" class="back-link">&larr; Retour a la recherche</a>
+
+    {% if entity_type == 'user' %}
+    <div class="entity-card">
+        <h2>{{ entity.first_name }} {{ entity.last_name }}</h2>
+        <dl>
+            <dt>Structure</dt>
+            <dd>{{ entity.structure_name }}</dd>
+
+            <dt>Type</dt>
+            <dd>{% if entity.is_professional %}Professionnel{% else %}Beneficiaire{% endif %}</dd>
+
+            <dt>Date de debut</dt>
+            <dd>{{ entity.start_date }}</dd>
+
+            <dt>Date de creation</dt>
+            <dd>{{ entity.creation_date }}</dd>
+        </dl>
+    </div>
+
+    {% elif entity_type == 'structure' %}
+    <div class="entity-card">
+        <h2>{{ entity.name }}</h2>
+        <dl>
+            {% if entity.type %}
+            <dt>Type</dt>
+            <dd>{{ entity.type }}</dd>
+            {% endif %}
+
+            {% if entity.address or entity.commune %}
+            <dt>Adresse</dt>
+            <dd>{{ entity.address }}{% if entity.address and entity.code_postal %}, {% endif %}{{ entity.code_postal }} {{ entity.commune }}</dd>
+            {% endif %}
+
+            {% if entity.description %}
+            <dt>Description</dt>
+            <dd>{{ entity.description }}</dd>
+            {% endif %}
+
+            {% if entity.telephone %}
+            <dt>Telephone</dt>
+            <dd>{{ entity.telephone }}</dd>
+            {% endif %}
+
+            {% if entity.courriel %}
+            <dt>Email</dt>
+            <dd><a href="mailto:{{ entity.courriel }}">{{ entity.courriel }}</a></dd>
+            {% endif %}
+
+            {% if entity.site_web %}
+            <dt>Site web</dt>
+            <dd><a href="{{ entity.site_web }}" target="_blank">{{ entity.site_web }}</a></dd>
+            {% endif %}
+
+            {% if entity.lien_source %}
+            <dt>Source</dt>
+            <dd><a href="{{ entity.lien_source }}" target="_blank">{{ entity.source }}</a></dd>
+            {% endif %}
+        </dl>
+    </div>
+
+    {% elif entity_type == 'service' %}
+    <div class="entity-card">
+        <h2>{{ entity.name }}</h2>
+        <dl>
+            {% if entity.type %}
+            <dt>Type</dt>
+            <dd>
+                {% if entity.type is iterable and entity.type is not string %}
+                    {{ entity.type | join(', ') }}
+                {% else %}
+                    {{ entity.type }}
+                {% endif %}
+            </dd>
+            {% endif %}
+
+            {% if entity.theme %}
+            <dt>Theme</dt>
+            <dd>
+                {% if entity.theme is iterable and entity.theme is not string %}
+                    {{ entity.theme | join(', ') }}
+                {% else %}
+                    {{ entity.theme }}
+                {% endif %}
+            </dd>
+            {% endif %}
+
+            {% if entity.description %}
+            <dt>Description</dt>
+            <dd>{{ entity.description }}</dd>
+            {% endif %}
+
+            {% if entity.frais %}
+            <dt>Frais</dt>
+            <dd>
+                {% if entity.frais is iterable and entity.frais is not string %}
+                    {{ entity.frais | join(', ') }}
+                {% else %}
+                    {{ entity.frais }}
+                {% endif %}
+            </dd>
+            {% endif %}
+
+            {% if entity.modes_accueil %}
+            <dt>Modes d'accueil</dt>
+            <dd>
+                {% if entity.modes_accueil is iterable and entity.modes_accueil is not string %}
+                    {{ entity.modes_accueil | join(', ') }}
+                {% else %}
+                    {{ entity.modes_accueil }}
+                {% endif %}
+            </dd>
+            {% endif %}
+        </dl>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

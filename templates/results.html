@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Resultats: {{ query }}{% endblock %}
+
+{% block content %}
+<div class="results-page">
+    <div class="results-header">
+        <a href="{{ url_for('index') }}" class="back-link">&larr; Retour</a>
+        <h2>Resultats pour "{{ query }}"</h2>
+        <p>{{ total }} resultat(s) - {{ type_filter or 'tous types' }}</p>
+    </div>
+
+    <div class="results-list">
+        {% for hit in hits %}
+        <div class="result-card">
+            {% if type_filter == 'users' %}
+            <a href="{{ url_for('user_detail', id=hit.id) }}">
+                <h3>{{ hit._formatted.first_name | safe }} {{ hit._formatted.last_name | safe }}</h3>
+                <p>{{ hit.structure_name }}</p>
+                <p class="meta">
+                    {% if hit.is_professional %}Professionnel{% else %}Beneficiaire{% endif %}
+                    - Depuis {{ hit.start_date }}
+                </p>
+            </a>
+            {% elif type_filter == 'services' %}
+            <a href="{{ url_for('service_detail', id=hit.id) }}">
+                <h3>{{ hit._formatted.name | safe }}</h3>
+                <p>{{ hit.description[:200] if hit.description else '' }}{% if hit.description and hit.description|length > 200 %}...{% endif %}</p>
+                <p class="meta">
+                    {% if hit.theme is iterable and hit.theme is not string %}
+                        {{ hit.theme | join(', ') }}
+                    {% else %}
+                        {{ hit.theme }}
+                    {% endif %}
+                </p>
+            </a>
+            {% else %}
+            <a href="{{ url_for('structure_detail', id=hit.id) }}">
+                <h3>{{ hit._formatted.name | safe }}</h3>
+                <p>{{ hit.description[:200] if hit.description else '' }}{% if hit.description and hit.description|length > 200 %}...{% endif %}</p>
+                <p class="meta">{{ hit.type }} - {{ hit.commune }}</p>
+            </a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="{{ url_for('results', q=query, type=type_filter, page=page-1) }}">&larr; Precedent</a>
+        {% endif %}
+
+        <span>Page {{ page }} / {{ total_pages }}</span>
+
+        {% if page < total_pages %}
+        <a href="{{ url_for('results', q=query, type=type_filter, page=page+1) }}">Suivant &rarr;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
