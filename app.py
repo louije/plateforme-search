@@ -249,11 +249,26 @@ def reindex_run():
         yield "<html><head><style>body{font-family:monospace;padding:20px;background:#1a1a2e;color:#eee}pre{white-space:pre-wrap}.ok{color:#4ade80}.err{color:#f87171}a{color:#60a5fa}</style></head><body><pre>"
 
         try:
-            yield "Step 1: Extracting structures and services...\n"
             extract.DATA_DIR.mkdir(exist_ok=True)
-            structures, services = extract.extract_all()
-            yield f"<span class='ok'>  ✓ Loaded {len(structures):,} structures</span>\n"
-            yield f"<span class='ok'>  ✓ Loaded {len(services):,} services</span>\n"
+
+            yield "Step 1: Downloading data from data.gouv.fr...\n"
+            source, structures_url, services_url = extract.get_data_source()
+            if source == "swiper":
+                yield "  Using local swiper data\n"
+            else:
+                yield f"<span class='ok'>  ✓ Found dataset URLs</span>\n"
+
+            yield "  Downloading structures (~80MB)...\n"
+            raw_structures = extract.load_structures_raw(source, structures_url)
+            yield f"<span class='ok'>  ✓ Downloaded {len(raw_structures):,} structures</span>\n"
+
+            yield "  Downloading services (~175MB)...\n"
+            raw_services = extract.load_services_raw(source, services_url)
+            yield f"<span class='ok'>  ✓ Downloaded {len(raw_services):,} services</span>\n"
+
+            yield "  Transforming and saving...\n"
+            structures = extract.save_structures(raw_structures)
+            services = extract.save_services(raw_services)
             siaes = extract.identify_siaes(structures)
             yield f"<span class='ok'>  ✓ Selected {len(siaes)} SIAEs</span>\n\n"
 
@@ -284,7 +299,14 @@ def reindex_run():
 
         yield "</pre><p><a href='/admin/reindex'>← Back</a> | <a href='/'>Home</a></p></body></html>"
 
-    return Response(generate(), mimetype="text/html")
+    return Response(
+        generate(),
+        mimetype="text/html",
+        headers={
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+            "Cache-Control": "no-cache",  # Disable caching
+        }
+    )
 
 
 if __name__ == "__main__":

@@ -54,26 +54,32 @@ def download_json(url, description):
     return json.loads(content)
 
 
-def load_or_download_data():
-    """Load structures and services from swiper or download from data.gouv.fr."""
+def get_data_source():
+    """Check if swiper data exists, return source type and URLs if needed."""
     swiper_structures = SWIPER_DATA / "structures.json"
     swiper_services = SWIPER_DATA / "services.json"
 
-    # Try swiper first
     if swiper_structures.exists() and swiper_services.exists():
-        print("Loading from swiper...")
-        with open(swiper_structures, encoding="utf-8") as f:
-            structures = json.load(f)
-        with open(swiper_services, encoding="utf-8") as f:
-            services = json.load(f)
-        return structures, services
+        return "swiper", None, None
 
-    # Download from data.gouv.fr with dynamic URL lookup
-    print("Swiper data not found, downloading from data.gouv.fr...")
     structures_url, services_url = get_resource_urls()
-    structures = download_json(structures_url, "structures")
-    services = download_json(services_url, "services")
-    return structures, services
+    return "download", structures_url, services_url
+
+
+def load_structures_raw(source, url=None):
+    """Load raw structures data."""
+    if source == "swiper":
+        with open(SWIPER_DATA / "structures.json", encoding="utf-8") as f:
+            return json.load(f)
+    return download_json(url, "structures (~80MB)")
+
+
+def load_services_raw(source, url=None):
+    """Load raw services data."""
+    if source == "swiper":
+        with open(SWIPER_DATA / "services.json", encoding="utf-8") as f:
+            return json.load(f)
+    return download_json(url, "services (~175MB)")
 
 
 def transform_structure(s):
@@ -111,23 +117,35 @@ def transform_service(s):
     }
 
 
-def extract_all():
-    """Extract and transform structures and services."""
-    raw_structures, raw_services = load_or_download_data()
-
-    print(f"  Loaded {len(raw_structures)} structures")
+def save_structures(raw_structures):
+    """Transform and save structures."""
     structures = [transform_structure(s) for s in raw_structures]
     output_path = DATA_DIR / "structures.json"
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(structures, f, ensure_ascii=False)
-    print(f"  Saved {len(structures)} structures to {output_path}")
+    return structures
 
-    print(f"  Loaded {len(raw_services)} services")
+
+def save_services(raw_services):
+    """Transform and save services."""
     services = [transform_service(s) for s in raw_services]
     output_path = DATA_DIR / "services.json"
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(services, f, ensure_ascii=False)
-    print(f"  Saved {len(services)} services to {output_path}")
+    return services
+
+
+def extract_all():
+    """Extract and transform structures and services."""
+    source, structures_url, services_url = get_data_source()
+
+    raw_structures = load_structures_raw(source, structures_url)
+    print(f"  Loaded {len(raw_structures)} structures")
+    structures = save_structures(raw_structures)
+
+    raw_services = load_services_raw(source, services_url)
+    print(f"  Loaded {len(raw_services)} services")
+    services = save_services(raw_services)
 
     return structures, services
 
