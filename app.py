@@ -237,46 +237,54 @@ def reindex():
 
 @app.route("/admin/reindex/run", methods=["POST"])
 def reindex_run():
-    """Run the reindexing process."""
+    """Run the reindexing process with streaming output."""
+    from flask import Response
     import extract
     import generate_users
     import index
 
     user_count = int(request.form.get("users", 10000))
-    logs = []
 
-    try:
-        # Step 1: Extract data
-        logs.append("Extracting structures and services...")
-        extract.DATA_DIR.mkdir(exist_ok=True)
-        structures, services = extract.extract_all()
-        logs.append(f"  Loaded {len(structures)} structures")
-        logs.append(f"  Loaded {len(services)} services")
-        siaes = extract.identify_siaes(structures)
-        logs.append(f"  Selected {len(siaes)} SIAEs")
+    def generate():
+        yield "<html><head><style>body{font-family:monospace;padding:20px;background:#1a1a2e;color:#eee}pre{white-space:pre-wrap}.ok{color:#4ade80}.err{color:#f87171}a{color:#60a5fa}</style></head><body><pre>"
 
-        # Step 2: Generate users
-        logs.append(f"Generating {user_count:,} users...")
-        users = generate_users.generate_all_users(
-            total_users=user_count,
-            users_per_siae=100
-        )
-        logs.append(f"  Generated {len(users):,} users")
+        try:
+            yield "Step 1: Extracting structures and services...\n"
+            extract.DATA_DIR.mkdir(exist_ok=True)
+            structures, services = extract.extract_all()
+            yield f"<span class='ok'>  ✓ Loaded {len(structures):,} structures</span>\n"
+            yield f"<span class='ok'>  ✓ Loaded {len(services):,} services</span>\n"
+            siaes = extract.identify_siaes(structures)
+            yield f"<span class='ok'>  ✓ Selected {len(siaes)} SIAEs</span>\n\n"
 
-        # Step 3: Index into Meilisearch
-        logs.append("Indexing into Meilisearch...")
-        client = index.get_client()
-        index.clear_indexes(client)
-        index.index_users(client)
-        index.index_structures(client)
-        index.index_services(client)
-        logs.append("Indexing complete!")
+            yield f"Step 2: Generating {user_count:,} users...\n"
+            users = generate_users.generate_all_users(
+                total_users=user_count,
+                users_per_siae=100
+            )
+            yield f"<span class='ok'>  ✓ Generated {len(users):,} users</span>\n\n"
 
-        return render_template("admin/reindex.html", logs=logs, success=True)
+            yield "Step 3: Indexing into Meilisearch...\n"
+            client = index.get_client()
+            index.clear_indexes(client)
+            yield "  Indexing users...\n"
+            index.index_users(client)
+            yield f"<span class='ok'>  ✓ Indexed {len(users):,} users</span>\n"
+            yield "  Indexing structures...\n"
+            index.index_structures(client)
+            yield f"<span class='ok'>  ✓ Indexed {len(structures):,} structures</span>\n"
+            yield "  Indexing services...\n"
+            index.index_services(client)
+            yield f"<span class='ok'>  ✓ Indexed {len(services):,} services</span>\n\n"
 
-    except Exception as e:
-        logs.append(f"ERROR: {str(e)}")
-        return render_template("admin/reindex.html", logs=logs, success=False)
+            yield "<span class='ok'>✓ Reindexing complete!</span>\n"
+
+        except Exception as e:
+            yield f"<span class='err'>ERROR: {str(e)}</span>\n"
+
+        yield "</pre><p><a href='/admin/reindex'>← Back</a> | <a href='/'>Home</a></p></body></html>"
+
+    return Response(generate(), mimetype="text/html")
 
 
 if __name__ == "__main__":
