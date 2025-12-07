@@ -41,17 +41,11 @@ def get_resource_urls():
 def download_json(url, description):
     """Download JSON from URL with progress indication."""
     print(f"Downloading {description}...")
-    response = requests.get(url, stream=True)
+    # Long timeout: 30s connect, 5min read (for large files)
+    response = requests.get(url, timeout=(30, 300))
     response.raise_for_status()
-
-    # Get content length if available
-    total = response.headers.get('content-length')
-    if total:
-        total = int(total)
-        print(f"  Size: {total / 1024 / 1024:.1f} MB")
-
-    content = response.content
-    return json.loads(content)
+    print(f"  Size: {len(response.content) / 1024 / 1024:.1f} MB")
+    return response.json()
 
 
 def get_data_source():
