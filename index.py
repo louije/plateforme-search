@@ -20,6 +20,16 @@ def get_client():
     )
 
 
+def wait_and_check(client, task_uid):
+    """Wait for a Meilisearch task and raise if it didn't succeed."""
+    result = client.wait_for_task(task_uid, timeout_in_ms=120000, interval_in_ms=200)
+    status = getattr(result, "status", None)
+    if status != "succeeded":
+        error = getattr(result, "error", None)
+        raise RuntimeError(f"Meilisearch task {task_uid} status={status}: {error}")
+    return result
+
+
 def load_json(filename):
     """Load JSON file from data directory."""
     path = DATA_DIR / filename
@@ -46,7 +56,7 @@ def index_users(client):
     for i in range(0, len(users), batch_size):
         batch = users[i:i + batch_size]
         task = index.add_documents(batch, primary_key="id")
-        client.wait_for_task(task.task_uid)
+        wait_and_check(client, task.task_uid)
         print(f"  Indexed {min(i + batch_size, len(users)):,}/{len(users):,} users")
 
     print(f"  Total: {len(users):,} users indexed")
@@ -69,8 +79,8 @@ def index_structures(client):
     batch_size = 1000
     for i in range(0, len(structures), batch_size):
         batch = structures[i:i + batch_size]
-        task = index.add_documents(batch)
-        client.wait_for_task(task.task_uid)
+        task = index.add_documents(batch, primary_key="id")
+        wait_and_check(client, task.task_uid)
         print(f"  Indexed {min(i + batch_size, len(structures))}/{len(structures)} structures")
 
     print(f"  Total: {len(structures)} structures indexed")
@@ -94,7 +104,7 @@ def index_services(client):
     for i in range(0, len(services), batch_size):
         batch = services[i:i + batch_size]
         task = index.add_documents(batch, primary_key="id")
-        client.wait_for_task(task.task_uid)
+        wait_and_check(client, task.task_uid)
         print(f"  Indexed {min(i + batch_size, len(services))}/{len(services)} services")
 
     print(f"  Total: {len(services)} services indexed")
