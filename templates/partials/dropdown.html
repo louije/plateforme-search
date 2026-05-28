@@ -65,7 +65,11 @@
             {% for hit in results.structures.hits %}
             <a href="{{ url_for('structure_detail', id=hit.id) }}" class="result-item">
                 <span class="result-name">{{ hit._formatted.name | safe }}</span>
+                {% if hit._formatted.description %}
+                <span class="result-meta">{{ hit._formatted.description | safe }}</span>
+                {% else %}
                 <span class="result-meta">{{ hit.type }} - {{ hit.commune }}</span>
+                {% endif %}
             </a>
             {% endfor %}
             {% if results.structures.estimatedTotalHits > limit %}
@@ -84,6 +88,9 @@
             {% for hit in results.services.hits %}
             <a href="{{ url_for('service_detail', id=hit.id) }}" class="result-item">
                 <span class="result-name">{{ hit._formatted.name | safe }}</span>
+                {% if hit._formatted.description %}
+                <span class="result-meta">{{ hit._formatted.description | safe }}</span>
+                {% else %}
                 <span class="result-meta">
                     {% if hit.theme is iterable and hit.theme is not string %}
                         {{ hit.theme | join(', ') }}
@@ -91,6 +98,7 @@
                         {{ hit.theme }}
                     {% endif %}
                 </span>
+                {% endif %}
             </a>
             {% endfor %}
             {% if results.services.estimatedTotalHits > limit %}

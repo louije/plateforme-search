@@ -85,7 +85,10 @@ def search():
             "indexUid": "structures",
             "q": query,
             "limit": limit,
-            "attributesToHighlight": ["name"],
+            "attributesToHighlight": ["name", "description"],
+            "attributesToCrop": ["description"],
+            "cropLength": 30,
+            "cropMarker": "…",
         })
 
     if not type_filter or type_filter == "services":
@@ -93,7 +96,10 @@ def search():
             "indexUid": "services",
             "q": query,
             "limit": limit,
-            "attributesToHighlight": ["name"],
+            "attributesToHighlight": ["name", "description"],
+            "attributesToCrop": ["description"],
+            "cropLength": 30,
+            "cropMarker": "…",
         })
 
     # Execute multi-search
@@ -145,6 +151,9 @@ def results():
         "limit": limit,
         "offset": offset,
         "attributesToHighlight": ["*"],
+        "attributesToCrop": ["description"],
+        "cropLength": 50,
+        "cropMarker": "…",
     }
 
     # Apply structure filter for users

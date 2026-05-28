@@ -25,19 +25,16 @@
             {% elif type_filter == 'services' %}
             <a href="{{ url_for('service_detail', id=hit.id) }}">
                 <h3>{{ hit._formatted.name | safe }}</h3>
-                <p>{{ hit.description[:200] if hit.description else '' }}{% if hit.description and hit.description|length > 200 %}...{% endif %}</p>
-                <p class="meta">
-                    {% if hit.theme is iterable and hit.theme is not string %}
-                        {{ hit.theme | join(', ') }}
-                    {% else %}
-                        {{ hit.theme }}
-                    {% endif %}
-                </p>
+                {% if hit._formatted.description %}
+                <p class="excerpt">{{ hit._formatted.description | safe }}</p>
+                {% endif %}
             </a>
             {% else %}
             <a href="{{ url_for('structure_detail', id=hit.id) }}">
                 <h3>{{ hit._formatted.name | safe }}</h3>
-                <p>{{ hit.description[:200] if hit.description else '' }}{% if hit.description and hit.description|length > 200 %}...{% endif %}</p>
+                {% if hit._formatted.description %}
+                <p class="excerpt">{{ hit._formatted.description | safe }}</p>
+                {% endif %}
                 <p class="meta">{{ hit.type }} - {{ hit.commune }}</p>
             </a>
             {% endif %}
