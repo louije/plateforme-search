@@ -7,6 +7,7 @@ Uses cached data if fresh, swiper data if available, otherwise downloads from da
 import json
 import re
 import time
+import unicodedata
 import requests
 from pathlib import Path
 
@@ -60,23 +61,34 @@ def download_json(url, description):
 
 
 def get_data_source():
-    """Check data source: cache (if fresh), swiper, or download."""
+    """Check data source: fresh cache, download, stale cache, or swiper."""
     cached_structures = DATA_DIR / "structures_raw.json"
     cached_services = DATA_DIR / "services_raw.json"
+    cache_exists = cached_structures.exists() and cached_services.exists()
 
-    # Check for fresh cache first
-    if is_cache_fresh(cached_structures) and is_cache_fresh(cached_services):
+    # Fresh cache: use it
+    if cache_exists and is_cache_fresh(cached_structures) and is_cache_fresh(cached_services):
         return "cache", None, None
 
-    # Check for swiper data
+    # Stale or missing cache: try to download fresh
+    try:
+        structures_url, services_url = get_resource_urls()
+        return "download", structures_url, services_url
+    except Exception as e:
+        print(f"  Download unavailable ({e}); falling back.")
+
+    # Stale cache is still better than swiper (swiper export lacks descriptions)
+    if cache_exists:
+        print("  Using stale cache.")
+        return "cache", None, None
+
+    # Last resort: swiper
     swiper_structures = SWIPER_DATA / "structures.json"
     swiper_services = SWIPER_DATA / "services.json"
     if swiper_structures.exists() and swiper_services.exists():
         return "swiper", None, None
 
-    # Need to download
-    structures_url, services_url = get_resource_urls()
-    return "download", structures_url, services_url
+    raise RuntimeError("No data source available: no cache, no download, no swiper data.")
 
 
 def load_structures_raw(source, url=None):
@@ -119,11 +131,20 @@ def load_services_raw(source, url=None):
     return data
 
 
+def sanitize_id(value):
+    """Meilisearch document ids allow only [A-Za-z0-9_-].
+    NFKD-normalize to strip accents (é → e), then replace remaining disallowed chars with _."""
+    if value is None:
+        return ""
+    ascii_str = unicodedata.normalize("NFKD", str(value)).encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"[^A-Za-z0-9_-]", "_", ascii_str)
+
+
 def transform_structure(s):
     """Transform structure to our schema."""
     geo = s.get("_geo", {}) or {}
     return {
-        "id": s.get("id"),
+        "id": sanitize_id(s.get("id")),
         "name": s.get("nom", ""),
         "type": s.get("typologie", ""),
         "address": s.get("adresse", ""),
@@ -131,7 +152,7 @@ def transform_structure(s):
         "code_postal": s.get("code_postal", ""),
         "latitude": geo.get("lat"),
         "longitude": geo.get("lng"),
-        "description": s.get("presentation_detail") or s.get("presentation_resume", ""),
+        "description": s.get("description", ""),
         "source": s.get("source", ""),
         "lien_source": s.get("lien_source", ""),
         "telephone": s.get("telephone", ""),
@@ -143,12 +164,12 @@ def transform_structure(s):
 def transform_service(s):
     """Transform service to our schema."""
     return {
-        "id": s.get("id"),
+        "id": sanitize_id(s.get("id")),
         "name": s.get("nom", ""),
         "type": s.get("types", []),
         "theme": s.get("thematiques", []),
-        "structure_id": s.get("structure_id", ""),
-        "description": s.get("presentation_detail") or s.get("presentation_resume", ""),
+        "structure_id": sanitize_id(s.get("structure_id", "")),
+        "description": s.get("description", ""),
         "frais": s.get("frais", []),
         "modes_accueil": s.get("modes_accueil", []),
     }
